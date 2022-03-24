@@ -1,0 +1,525 @@
+library(shiny)
+library(fpp3)
+library(plotly)
+library(ggeasy)
+library(ggpubr)
+library(shinyWidgets)
+library(shinydashboard)
+library(quantmod)
+library(plotly)
+library(DT)
+library(shinythemes)
+library(forecast)
+
+file_path <- "NewGirl.csv"
+g_trends <- read.csv(file_path, skip = 2)
+names(g_trends) <- c("Month", "Interest")
+g_trends$Month <- yearmonth(g_trends$Month)
+g_trends$Interest <- as.numeric(ifelse(g_trends$Interest == "<1",
+                                       0,
+                                       g_trends$Interest))
+g_trends <- tsibble(g_trends)
+g_trends %>% filter(year(Month) >= 2011) -> g_trends_1
+g_trends_1$Month <- as.Date(g_trends_1$Month)
+
+cols <- c("Season 1 Start",
+          "Season 2 Start",
+          "Season 3 Start",
+          "Season 4 Start",
+          "Season 5 Start",
+          "Season 6 Start",
+          "Season 7 Start")
+
+cols_1 <- c("Season 1 End",
+            "Season 2 End",
+            "Season 3 End",
+            "Season 4 End",
+            "Season 5 End",
+            "Season 6 End",
+            "Season 7 End")
+
+file_path2 <- "GameofThrones.csv"
+g_trends2 <- read.csv(file_path2, skip = 2)
+names(g_trends2) <- c("Month", "Interest_GOT")
+g_trends2$Month <- yearmonth(g_trends2$Month)
+g_trends2$Interest_GOT <- as.numeric(ifelse(g_trends2$Interest_GOT == "<1",
+                                            0,
+                                            g_trends2$Interest_GOT))
+g_trends2 <- tsibble(g_trends2)
+g_trends2 %>% filter(year(Month) >= 2011) -> g_trends2_1
+
+cols2 <- c("Season 1",
+           "Season 2",
+           "Season 3",
+           "Season 4",
+           "Season 5",
+           "Season 6",
+           "Season 7",
+           "Season 8")
+
+ui <- dashboardPage(
+  skin = "purple",
+  dashboardHeader(title = "New Girl Time Series Analytics"),
+  dashboardSidebar(
+    sidebarMenu(
+      menuItem("Instructions", icon = icon("fish"), tabName = "instructions"),
+      menuItem("Full Time Series Plot", icon = icon("pepper-hot"), tabName = "tsplot"),
+      menuItem("Plots", icon = icon("bug"), tabName = "scdplots"),
+      menuItem("Comparison to GOT", icon = icon("dragon"), tabName = "got",
+               menuSubItem("Separate Plots", tabName = "separate", icon = icon("hand-peace")),
+               menuSubItem("Combined Plot", tabName = "combined", icon = icon("handshake")),
+               menuSubItem("Residuals", tabName = "resid", icon = icon("hand-sparkles")))
+      
+    )
+  ),
+  
+  dashboardBody(
+    tabItems(
+      tabItem(tabName = "instructions",
+              fluidPage(
+                box(
+                  title = "Instructions for Navigating New Girl App!",
+                  width = 12,
+                  solidHeader = TRUE,
+                  background = "light-blue",
+                  status = "primary",
+                  textOutput("ins")
+                ),
+                
+                tags$img(
+                  src = "https://wallpapercave.com/wp/wp2153921.jpg",
+                  align = 'center',
+                  style="display: block; margin-left: auto; margin-right: auto;",
+                  width = "355",
+                  height = "250"
+                ),
+                
+                box(
+                  title = "Information for Full Time Series Plot!",
+                  width = 12,
+                  solidHeader = TRUE,
+                  background = "green",
+                  status = "primary",
+                  textOutput("ins1")
+                ),
+                
+                box(
+                  title = "Information for Plots!",
+                  width = 12,
+                  solidHeader = TRUE,
+                  background = "purple",
+                  status = "primary",
+                  textOutput("ins2")
+                ),
+                
+                box(
+                  title = "Information for Comparison to GOT!",
+                  width = 12,
+                  solidHeader = TRUE,
+                  background = "maroon",
+                  status = "primary",
+                  textOutput("ins3"), 
+                )
+              )
+      ),
+      
+      tabItem(tabName = "tsplot",
+              fluidRow(
+                box(
+                  title = "New Girl Time Series Data",
+                  width = 12,
+                  solidHeader = TRUE,
+                  status = "primary",
+                  plotOutput("NG_Ori", height = 250)),
+                
+                box(
+                  title = "New Girl Season Duration",
+                  width = 12,
+                  solidHeader = TRUE,
+                  status = "primary",
+                  plotlyOutput("NG_Box", height = 250)),
+                
+                box(
+                  title = "Interpretation of these Plots",
+                  width = 12,
+                  solidHeader = TRUE,
+                  background = "light-blue",
+                  status = "primary",
+                  textOutput("timeseriestab")
+                )
+              )),
+      
+      tabItem(tabName = "scdplots",
+              fluidRow(
+                box(
+                  title = "Seasonality, Autocorrelation, and Decomposition of Frequency of New Girl Searches", 
+                  width = 12,
+                  solidHeader = TRUE,
+                  status = "primary",
+                  plotOutput("myplot", height = 250)),
+                  radioButtons(inputId = "plot_type",
+                               label = "Please select which plot you would like to see!",
+                               choices = c("Seasonality", "Autocorrelation", "Decomposition" )),
+                  
+                  conditionalPanel(condition = "input.plot_type == 'Autocorrelation'",
+                                   materialSwitch(
+                                     inputId = "diff",
+                                     label = "Difference? (You must unselect Difference in order to see other plots!)",
+                                     status="primary",
+                                     right = FALSE)),
+
+                box(
+                  title = "Interpretation of Selected Plot", 
+                  width = 12,
+                  background = "olive",
+                  solidHeader = TRUE,
+                  status = "primary",
+                textOutput("plotstab")
+              
+              ))),
+      
+      tabItem(tabName = "separate",
+              fluidRow(
+                box(
+                  title = "New Girl Time Series Data",
+                  width = 12,
+                  solidHeader = TRUE,
+                  status = "primary",
+                  plotOutput("NG", height = 250)),
+                
+                box(
+                  title = "Game of Thrones Time Series Data",
+                  width = 12,
+                  solidHeader = TRUE,
+                  status = "primary",
+                  plotOutput("GOT", height = 250)),
+                
+                box(
+                  title = "Interpretation of these Plots",
+                  width = 12,
+                  solidHeader = TRUE,
+                  background = "purple",
+                  status = "primary",
+                  textOutput("separatetab")
+                ))),
+      
+      
+      tabItem(tabName = "combined",
+              fluidRow(
+                box(
+                  title = "Direct Comparison of New Girl and Game of Thrones Search Frequency",
+                  width = 12,
+                  solidHeader = TRUE,
+                  status = "primary",
+                  plotlyOutput("Co", height = 250)),
+                
+                box(
+                  title = "Interpretation of this Combined Plot",
+                  width = 12,
+                  solidHeader = TRUE,
+                  background = "green",
+                  status = "primary",
+                  textOutput("combinedtab")
+                )
+              )
+      ),
+      
+      tabItem(tabName = "resid",
+              fluidRow(
+                box(
+                  title = "Residuals of New Girl Time Series",
+                  width = 12,
+                  solidHeader = TRUE,
+                  status = "primary",
+                  plotOutput("NGR", height = 250)),
+                
+                box(
+                  title = "Residuals of Game of Thrones Time Series",
+                  width = 12,
+                  solidHeader = TRUE,
+                  status = "primary",
+                  plotOutput("GOTR", height = 250)
+                ),
+                
+                box(
+                  title = "Residuals of Game of Thrones Time Series",
+                  width = 12,
+                  solidHeader = TRUE,
+                  background = "light-blue",
+                  status = "primary",
+                  textOutput("restext")
+                )
+              )
+      ))))
+
+server <- function(input, output, session) {
+  
+  output$timeseriestab <- renderText({
+    "With these two plots, we can see the full time series of New Girl search frequency or interest from when it aired to present day. It appears that this data could have some seasonality, but if we look at the New Girl season duration plot, we can see that it is seasonality based on new seasons airing. I would say that based on these graphs, this data does not follow an intense cyclical pattern or trend. Additionally, there is a consistent drop in the middle of the seasons followed by a rise (big or small) towards the end of the season. Also, we can see that there is decreasing interest in the show as the seasons progress, but a drastically lower interest in the even seasons (2,4,6) and a higher interest in the odd seasons (1,3,5,7). Additionally, we can see a rise in interest before the new seasons premiered as anticipation for the show was growing. Finally, I think it is interesting to see the rise in interest in early 2020 which was when COVID-19 and quarantine began. "
+  })
+  
+  output$separatetab <- renderText({
+    "These two plots show the interest in New Girl and Game of Thrones from the time they aired to present day. As stated in the Instructions tab, New Girl and Game of Thrones are both popular shows that began in the same year and finished around the same time. I thought it would be interesting to see a comparison in the interest of these two shows over time. First, we can see that New Girl and Game of Thrones have opposite trends when it comes to interest. We have seen that New Girl had decreasing interest as the show progressed, yet Game of Thrones had drastically increasing interest as the show progressed. Another difference is that although Game of Thrones has more dramatic peaks as the seasons come out, their “off-season” interest is consistently very low around 15. Whereas New Girl has a lower interest as seasons come out, their “off-season” interest is consistently higher around 25. The last obvious difference is that after Game of Thrones finished creating new seasons, their interest dropped and has not since risen. On the other hand, after New Girl finished creating seasons, there was another rise in interest beginning in 2020 and rising through 2021. Although we can see a lot of differences, there are also a lot of similarities. Obviously, both shows had peaks in interest as they were releasing seasons and drops in interest after the season that was airing ended. I think it is also interesting to look at how there was a rise in interest in both shows before the new seasons aired as there was an anticipation growing for the show and people were preparing to watch the new seasons. Finally, both New Girl and Game of Thrones have some seasons where there is a drop in interest in the middle of the season most likely while viewers were waiting for new episodes to air. "
+  })
+  
+  output$combinedtab <- renderText({
+    "This is a combined plot of New Girl and Game of Thrones interest from when they first aired through today. We can see all the same patterns as we did in the Separate Plots tab, but I think this graphic really shows the consistently higher New Girl interest in comparison to Game of Thrones.  "
+  })
+  
+  output$ins <- renderText({
+    "This is an app looking at the Google Trends of the TV show New Girl! Within this app there are 3 different tabs which are, Full Time Series Plot, Plots, and Comparison to GOT. "
+  })
+  
+  output$ins1 <- renderText({
+    "In the Full Time Series Plot tab, you will be able to see the full data of New Girl interest from when the show first aired to present day. Additionally, you will see a plot that shows the same data but with the season duration dates shown on the graph."
+  })
+  
+  output$ins2 <- renderText({
+    "In the Plots tab, there are 3 different plots available for viewing, seasonality, autocorrelation, and decomposition. You must select from the buttons which graph you would like to see! Additionally, if you choose the autocorrelation plot, there is an option to view the difference of the autocorrelation plot!"
+  })
+  
+  output$ins3 <- renderText({
+    "Finally, in the Comparison to GOT tab, there are three sub-tabs called Separate Plots, Combined Plots, and Residuals. The point of the Comparison to GOT tab is to compare the interest or search frequency of the TV show Game of Thrones compared to New Girl. These are two shows that started in the same year and finished within one year of each other. In the Separate Plots sub-tab, you can see the time series plot of both New Girl and Game of Thrones. Although, in the Combined Plot sub-tab, you can see a plot of both New Girl and Game of Thrones in the same graphic! Finally, in the Residuals sub-tab you can see a comparison of the residuals for New Girl and Game of Thrones."
+  })
+  
+  output$restext <- renderText({
+    "text"
+  })
+  
+  output$myplot <- renderPlot({
+    if (input$diff == "TRUE"){
+      g_trends %>%  
+        filter(year(Month) >= 2011) %>% 
+        mutate(diff = difference(Interest)) %>% 
+        autoplot(colour = "purple") 
+      
+    } else if (input$plot_type == "Autocorrelation") {
+      g_trends %>%  
+        filter(year(Month) >= 2011) %>% 
+        ACF() %>% 
+        autoplot(colour = "navy")
+      
+    } else if (input$plot_type == "Seasonality") {
+      g_trends %>%
+        filter(year(Month) >= 2011) %>% 
+        gg_season(polar = 1)
+    }
+    else if (input$plot_type == "Decomposition") {
+      g_trends %>% 
+        filter(year(Month) >= 2011) %>% 
+        model(classical_decomposition(Interest, type = "additive")) %>% 
+        components() %>%
+        autoplot(color = "navy")
+    }
+  })
+  
+  output$plotstab <- renderText({
+    if (input$diff == "TRUE"){
+      "Differencing an autocorrelation is what you do when there is extreme autocorrelation, or the data has a strong trend. Although differencing is not necessarily necessary in this situation, I thought it would be interesting to look at. With this differencing plot, we can see similar observations to what we saw in the time series plot from the Full Time Series Plot tab. We can see a slight seasonal trend based on seasons airing, as well as a decreasing interest in the show as it progressed. " 
+      
+    } else if (input$plot_type == "Autocorrelation") {
+      "Autocorrelation is how correlated a series is to itself by looking back a certain amount of lag, or the relationship of the data at current and past values. With this plot, we can see that the data has significant autocorrelation on lags 1, 2, 3, 4, and 12. Additionally there does not seem to be a large trend in the data."
+      
+    } else if (input$plot_type == "Seasonality") {
+      "Seasonality is when there are cycles in data that repeat consistently overtime. With this seasonality plot, we can see that there does not appear to be intense seasonality, but there appears to be seasonality based on release dates and when the show was airing. As seen in the Full Time Series Plot tab, on average the show began airing in September and ended around May (with a few exceptions). With this information, we can see the growth in interest between the months of September to April. We are also able to see the decline in interest in New Girl as the years progressed through this chart. "
+    }
+    else if (input$plot_type == "Decomposition") {
+      "Decomposition is when you deconstruct a time series into the patterns that make up the time series. With this decomposition chart we can first look at the interest graph which is the combined graph of all the patterns. With this graph we can see that it does not have much linearity at all. Additionally, we see heavy influences of seasonal patterns and we are also able to see the decreasing trend. When looking at the trend graph, we can see that there is some linearity as well as a decreasing trend. This mirrors what we have seen through the rest of the plots of New Girl losing interest as the seasons progressed. When looking at the seasonal graph, we can see that there is a lot of seasonality. There appears to be a great jump and consistency throughout the season, as well as a peak right before the new seasons air. We are also able to see the decrease in interest during the off season. Finally, when looking at the random graph, we see relatively what we have seen in the previous decomposition graphs."
+    }
+  })
+  
+  output$NG_Ori <- renderPlot({
+    ggplot(g_trends_1, aes(x=Month, y=Interest)) +
+      geom_line(aes(y = Interest),col = "Black") +
+      ggtitle("New Girl Search Frequency Over Time") +
+      easy_center_title()
+  })
+  
+  output$NG_Box <- renderPlotly({
+    ggplotly(ggplot(g_trends_1, aes(x=Month, y=Interest)) +
+               geom_line(aes(y = Interest),col = "Black") +
+               geom_vline(aes(xintercept=as.numeric(as.Date("2011-09-20")),
+                              colour=cols[1]),
+                          linetype=4) +
+               geom_vline(aes(xintercept=as.numeric(as.Date("2012-05-08")),
+                              colour=cols_1[1]),
+                          linetype=4) +
+               geom_rect(aes(xmin = as.Date("2011-09-20", format = "%Y-%m-%d"), 
+                             xmax = as.Date("2012-05-08", format = "%Y-%m-%d"),
+                             ymin=0,ymax=100),color="orange",alpha=0.1, fill = "orange") +
+               geom_vline(aes(xintercept=as.numeric(as.Date("2012-09-25")),
+                              colour=cols[2]),
+                          linetype=4) +
+               geom_vline(aes(xintercept=as.numeric(as.Date("2013-05-14")),
+                              colour=cols_1[2]),
+                          linetype=4) +
+               geom_rect(aes(xmin = as.Date("2012-09-25", format = "%Y-%m-%d"), 
+                             xmax = as.Date("2013-05-14", format = "%Y-%m-%d"),
+                             ymin=0,ymax=100),color="tan",alpha=0.1, fill = "tan") +
+               geom_vline(aes(xintercept=as.numeric(as.Date("2013-09-17")),
+                              colour=cols[3]),
+                          linetype=4) +
+               geom_vline(aes(xintercept=as.numeric(as.Date("2014-05-06")),
+                              colour=cols_1[3]),
+                          linetype=4) +
+               geom_rect(aes(xmin = as.Date("2013-09-17", format = "%Y-%m-%d"), 
+                             xmax = as.Date("2014-05-06", format = "%Y-%m-%d"),
+                             ymin=0,ymax=100),color="green",alpha=0.1, fill = "green") +
+               geom_vline(aes(xintercept=as.numeric(as.Date("2014-09-16")),
+                              colour=cols[4]),
+                          linetype=4) +
+               geom_vline(aes(xintercept=as.numeric(as.Date("2015-05-05")),
+                              colour=cols_1[4]),
+                          linetype=4) +
+               geom_rect(aes(xmin = as.Date("2014-09-16", format = "%Y-%m-%d"), 
+                             xmax = as.Date("2015-05-05", format = "%Y-%m-%d"),
+                             ymin=0,ymax=100),color="blue",alpha=0.1, fill = "blue") +
+               geom_vline(aes(xintercept=as.numeric(as.Date("2016-01-05")),
+                              colour=cols[5]),
+                          linetype=4) +
+               geom_vline(aes(xintercept=as.numeric(as.Date("2016-05-10")),
+                              colour=cols_1[5]),
+                          linetype=4) +
+               geom_rect(aes(xmin = as.Date("2016-01-05", format = "%Y-%m-%d"), 
+                             xmax = as.Date("2016-05-10", format = "%Y-%m-%d"),
+                             ymin=0,ymax=100),color="light blue",alpha=0.1, fill = "light blue") +
+               geom_vline(aes(xintercept=as.numeric(as.Date("2016-09-20")),
+                              colour=cols[6]),
+                          linetype=4) +
+               geom_vline(aes(xintercept=as.numeric(as.Date("2017-04-04")),
+                              colour=cols_1[6]),
+                          linetype=4) +
+               geom_rect(aes(xmin = as.Date("2016-09-20", format = "%Y-%m-%d"), 
+                             xmax = as.Date("2017-04-04", format = "%Y-%m-%d"),
+                             ymin=0,ymax=100),color="purple",alpha=0.1, fill = "purple") +
+               geom_vline(aes(xintercept=as.numeric(as.Date("2018-04-10")),
+                              colour=cols[7]),
+                          linetype=4) +
+               geom_vline(aes(xintercept=as.numeric(as.Date("2018-05-15")),
+                              colour=cols_1[7]),
+                          linetype=4) +
+               geom_rect(aes(xmin = as.Date("2018-04-10", format = "%Y-%m-%d"), 
+                             xmax = as.Date("2018-05-15", format = "%Y-%m-%d"),
+                             ymin=0,ymax=100),color="pink",alpha=0.1, fill = "pink") +
+               ggtitle("New Girl Season Duration- Search Frequency") +
+               easy_center_title()  +
+               scale_color_discrete("Seasons", labels=c('Season 1 Start',
+                                                        'Season 1 End',
+                                                        'Season 2 Start',
+                                                        'Season 2 End',
+                                                        'Season 3 Start',
+                                                        'Season 3 End',
+                                                        'Season 4 Start',
+                                                        'Season 4 End',
+                                                        'Season 5 Start',
+                                                        'Season 5 End',
+                                                        'Season 6 Start',
+                                                        'Season 6 End',
+                                                        'Season 7 Start',
+                                                        'Season 7 End')))
+  })
+  
+  output$NG <- renderPlot ({
+    ggplot(g_trends_1, aes(x=Month, y=Interest)) +
+      geom_line(aes(y = Interest),col = "Black") +
+      geom_vline(aes(xintercept=as.numeric(as.Date("2011-09-20")),
+                     colour=cols[1]),
+                 linetype=4) +
+      geom_vline(aes(xintercept=as.numeric(as.Date("2012-09-25")),
+                     colour=cols[2]),
+                 linetype=4) +
+      geom_vline(aes(xintercept=as.numeric(as.Date("2013-09-17")),
+                     colour=cols[3]),
+                 linetype=4) +
+      geom_vline(aes(xintercept=as.numeric(as.Date("2014-09-16")),
+                     colour=cols[4]),
+                 linetype=4) +
+      geom_vline(aes(xintercept=as.numeric(as.Date("2016-01-05")),
+                     colour=cols[5]),
+                 linetype=4) +
+      geom_vline(aes(xintercept=as.numeric(as.Date("2016-09-20")),
+                     colour=cols[6]),
+                 linetype=4) +
+      geom_vline(aes(xintercept=as.numeric(as.Date("2018-04-10")),
+                     colour=cols[7]),
+                 linetype=4) +
+      ggtitle("Start of a New Girl Season - Search Frequency") +
+      easy_center_title()  +
+      scale_color_discrete("Seasons", labels=c('Season 1',
+                                               'Season 2',
+                                               'Season 3',
+                                               'Season 4',
+                                               'Season 5',
+                                               'Season 6',
+                                               'Season 7'))
+  })
+  
+  output$GOT <- renderPlot({
+    ggplot(g_trends2_1, aes(x=Month, y=Interest_GOT)) +
+      geom_line(aes(y = Interest_GOT),col = "Black") +
+      geom_vline(aes(xintercept=as.numeric(as.Date("2011-04-17")),
+                     colour=cols2[1]),
+                 linetype=4) +
+      geom_vline(aes(xintercept=as.numeric(as.Date("2012-04-01")),
+                     colour=cols2[2]),
+                 linetype=4) +
+      geom_vline(aes(xintercept=as.numeric(as.Date("2013-03-31")),
+                     colour=cols2[3]),
+                 linetype=4) +
+      geom_vline(aes(xintercept=as.numeric(as.Date("2014-04-06")),
+                     colour=cols2[4]),
+                 linetype=4) +
+      geom_vline(aes(xintercept=as.numeric(as.Date("2015-04-12")),
+                     colour=cols2[5]),
+                 linetype=4) +
+      geom_vline(aes(xintercept=as.numeric(as.Date("2016-04-24")),
+                     colour=cols2[6]),
+                 linetype=4) +
+      geom_vline(aes(xintercept=as.numeric(as.Date("2017-07-16")),
+                     colour=cols2[7]),
+                 linetype=4) +
+      geom_vline(aes(xintercept=as.numeric(as.Date("2019-04-14")),
+                     colour=cols2[8]),
+                 linetype=4) +
+      ggtitle("Start of a Game of Thrones Season - Search Frequency") +
+      easy_center_title()  +
+      scale_color_discrete("Seasons", labels=c('Season 1',
+                                               'Season 2',
+                                               'Season 3',
+                                               'Season 4',
+                                               'Season 5',
+                                               'Season 6',
+                                               'Season 7',
+                                               'Season 8'))
+  })
+  
+  output$Co <- renderPlotly({
+    ggplotly(ggplot() +
+               geom_line(data = g_trends %>% filter(year(Month) >= 2011), aes(x= Month, y= Interest), color = "magenta") + 
+               geom_line(data = g_trends2 %>% filter(year(Month) >= 2011), aes(x= Month, y= Interest_GOT), color = "dark green") +
+               ggtitle("Comparison of New Girl and Game of Thrones Search Frequency") +
+               easy_center_title() +
+               scale_color_discrete(name = "Show",
+                                    labels = c('New Girl',
+                                               'Game of Thrones'))
+    )
+  })
+  
+  output$NGR <- renderPlot({
+    residuals(naive(g_trends)) %>% 
+               autoplot(color = "purple") +
+               ggtitle("Residuals for New Girl") +
+               easy_center_title() 
+    
+  })
+  
+  output$GOTR <- renderPlot({
+    residuals(naive(g_trends2)) %>% 
+               autoplot(color = "navy") + 
+               ggtitle("Residuals for Game of Thrones") +
+               easy_center_title() 
+    
+  })
+}
+
+shinyApp(ui, server)
