@@ -234,6 +234,14 @@ ui <- dashboardPage(
                   plotOutput("NGR", height = 250)),
                 
                 box(
+                  title = "TSLM of New Girl Time Series",
+                  width = 12,
+                  solidHeader = TRUE,
+                  status = "primary",
+                  plotOutput("NGR2", height = 250)
+                ),
+                
+                box(
                   title = "Residuals of Game of Thrones Time Series",
                   width = 12,
                   solidHeader = TRUE,
@@ -242,12 +250,22 @@ ui <- dashboardPage(
                 ),
                 
                 box(
-                  title = "Residuals of Game of Thrones Time Series",
+                  title = "TSLM of Game of Thrones Time Series",
+                  width = 12,
+                  solidHeader = TRUE,
+                  status = "primary",
+                  plotOutput("GOTR2", height = 250)
+                ),
+                
+                box(
+                  title = "Residuals Interpretation",
                   width = 12,
                   solidHeader = TRUE,
                   background = "light-blue",
                   status = "primary",
-                  textOutput("restext")
+                  textOutput("restext"),
+                  textOutput("restext3"),
+                  textOutput("restext2")
                 )
               )
       ))))
@@ -283,7 +301,15 @@ server <- function(input, output, session) {
   })
   
   output$restext <- renderText({
-    "text"
+    "Residuals of a time series is the difference between the model and the observed data, with the model being the combination of the trend and seasonality component. The residual graph shows us how well the observed data matches the model! With these two times series we made a TSLM model which is fitting a linear model, including trend and seasonality components, to a time series. When looking at the results for New Girl, we can see in the top plot, or Innovation residuals, that towards 2020-2022 the plot gets thinner compared to the beginning of the time which is concerning. Ideally, there would be no pattern in the plot. When looking at the bottom left or ACF plot, we can see that there is large issue with lag. This means that the data is extremely autocorrelated at some points which is also concerning. Additionally, we can see that with the New Girl data there is super high first order autocorrelation which means that observations that are one apart are correlated. When looking at the bar chart on the bottom left, the chart roughly follows a bell-shaped curve. Overall, I would say that the residuals for New Girl are concerning which means that this model does not do a great job in fitting the data. "
+  })
+  
+  output$restext2 <- renderText({
+    "When looking at the TSLM for Game of Thrones, we can see that unlike the New Girl model, this data follows a distinct pattern, and the pattern thickens as the years go on. Although this data has a pattern where it is not supposed to, there are a few significant issues with lag, but there are smaller issues with lag compared to the New Girl model. Finally, when looking at the count bar chart, we can see that it does not follow a bell-shaped curve and has large issues with outliers which is very concerning. This means that this model for Game of Thrones does not fit the data well and could be determined as a worse model than the New Girl model. In conclusion, the biggest take away from these models are that they are extremely underfit. "
+  })
+  
+  output$restext3 <- renderText({
+    " -  "
   })
   
   output$myplot <- renderPlot({
@@ -321,7 +347,7 @@ server <- function(input, output, session) {
       "Autocorrelation is how correlated a series is to itself by looking back a certain amount of lag, or the relationship of the data at current and past values. With this plot, we can see that the data has significant autocorrelation on lags 1, 2, 3, 4, and 12. Additionally there does not seem to be a large trend in the data."
       
     } else if (input$plot_type == "Seasonality") {
-      "Seasonality is when there are cycles in data that repeat consistently overtime. With this seasonality plot, we can see that there does not appear to be intense seasonality, but there appears to be seasonality based on release dates and when the show was airing. As seen in the Full Time Series Plot tab, on average the show began airing in September and ended around May (with a few exceptions). With this information, we can see the growth in interest between the months of September to April. We are also able to see the decline in interest in New Girl as the years progressed through this chart. "
+      "Seasonality is when there are cycles in data that repeat consistently overtime. With this seasonality plot, we can see that there does not appear to be intense seasonality, but there appears to be seasonality based on release dates and when the show was airing. As seen in the Full Time Series Plot tab, on average the show began airing in September and ended around May (with a few exceptions). With this information, we can see the growth in interest between the months of September to May. We are also able to see the decline in interest in New Girl as the years progressed through this chart. "
     }
     else if (input$plot_type == "Decomposition") {
       "Decomposition is when you deconstruct a time series into the patterns that make up the time series. With this decomposition chart we can first look at the interest graph which is the combined graph of all the patterns. With this graph we can see that it does not have much linearity at all. Additionally, we see heavy influences of seasonal patterns and we are also able to see the decreasing trend. When looking at the trend graph, we can see that there is some linearity as well as a decreasing trend. This mirrors what we have seen through the rest of the plots of New Girl losing interest as the seasons progressed. When looking at the seasonal graph, we can see that there is a lot of seasonality. There appears to be a great jump and consistency throughout the season, as well as a peak right before the new seasons air. We are also able to see the decrease in interest during the off season. Finally, when looking at the random graph, we see relatively what we have seen in the previous decomposition graphs."
@@ -518,6 +544,24 @@ server <- function(input, output, session) {
                autoplot(color = "navy") + 
                ggtitle("Residuals for Game of Thrones") +
                easy_center_title() 
+    
+  })
+  
+  output$NGR2 <- renderPlot({
+    fit_consNG <- g_trends %>%
+    filter(year(Month) >= 2011) %>% 
+    model(lm = TSLM(Interest ~ Month))
+  
+  fit_consNG %>% gg_tsresiduals()
+  
+  })
+  
+  output$GOTR2 <- renderPlot({
+    fit_consGOT <- g_trends2 %>%
+      filter(year(Month) >= 2011) %>% 
+      model(lm = TSLM(Interest_GOT ~ Month))
+    
+    fit_consGOT %>% gg_tsresiduals()
     
   })
 }
