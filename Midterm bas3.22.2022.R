@@ -494,7 +494,17 @@ ui <- dashboardPage(
                   solidHeader = TRUE,
                   background = "green",
                   status = "primary",
-                  textOutput("bestw")
+                  textOutput("bestw"),
+                  textOutput("bestw2"),
+                  textOutput("bestw3")
+                ),
+                
+                tags$img(
+                  src = "stretch.jpg",
+                  align = 'center',
+                  style="display: block; margin-left: auto; margin-right: auto;",
+                  width = "550",
+                  height = "250"
                 )
               ))
       
@@ -592,6 +602,14 @@ server <- function(input, output, session) {
   
   output$bestw <- renderText({
     " When comparing all of the RMSEs of the models we have made  (naïve, seasonal naïve, mean, drift, Holt’s, Holt-Winters’, and 2 ARIMA models) using time series cross-validation we find that the mean model is the best model in predicting New Girl interest because of its lowest RMSE. Using time series cross-validation methods, we expect the mean model to typically miss by about 11.6 in predicting New Girl interest.   "
+  })
+  
+  output$bestw2 <- renderText({
+    " -  "
+  })
+  
+  output$bestw3 <- renderText({
+    " The results of the time series cross-validation is shown below!  "
   })
   
   output$myplot <- renderPlot({
@@ -928,7 +946,10 @@ server <- function(input, output, session) {
   })
   
   output$bmp <- renderPlot({
-    MeanFit %>% 
+    MeanFit <- train %>% 
+      model(mean = MEAN(Interest)) 
+    
+     MeanFit %>% 
       forecast(test) %>% 
       autoplot(NGTS)
     
