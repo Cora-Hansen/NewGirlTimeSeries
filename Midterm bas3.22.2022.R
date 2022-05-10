@@ -10,6 +10,9 @@ library(plotly)
 library(DT)
 library(shinythemes)
 library(forecast)
+library(rsconnect)
+
+rsconnect::setAccountInfo(name='corahansen', token='1891466137B763D31A82BE5C9CC7BAF2', secret='kwdxOCRQeWYQmjqOF7o/s1yJIJUbGN12GvD21ZQC')
 
 file_path <- "NewGirl.csv"
 g_trends <- read.csv(file_path, skip = 2)

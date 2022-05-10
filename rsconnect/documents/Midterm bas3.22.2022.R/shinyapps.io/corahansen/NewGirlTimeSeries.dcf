@@ -1,0 +1,13 @@
+name: NewGirlTimeSeries
+title: NewGirlTimeSeries
+username:
+account: corahansen
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 6273644
+bundleId: 5892157
+url: https://corahansen.shinyapps.io/NewGirlTimeSeries/
+when: 1652206597.89208
+lastSyncTime: 1652206597.8921
+asMultiple: FALSE
+asStatic: FALSE
