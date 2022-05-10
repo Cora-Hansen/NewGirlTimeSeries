@@ -57,6 +57,16 @@ cols2 <- c("Season 1",
            "Season 7",
            "Season 8")
 
+g_trends_1 %>% 
+  mutate(Month = yearmonth(Month)) %>% 
+  as_tsibble(index = Month) -> NGTS
+
+train <- NGTS %>% 
+  filter(Month <= yearmonth("2021 March"))
+
+test <- NGTS %>% 
+  filter(Month > yearmonth("2021 March"))
+
 ui <- dashboardPage(
   skin = "purple",
   dashboardHeader(title = "New Girl Time Series Analytics"),
@@ -66,10 +76,21 @@ ui <- dashboardPage(
       menuItem("Full Time Series Plot", icon = icon("pepper-hot"), tabName = "tsplot"),
       menuItem("Plots", icon = icon("bug"), tabName = "scdplots"),
       menuItem("Comparison to GOT", icon = icon("dragon"), tabName = "got",
-               menuSubItem("Separate Plots", tabName = "separate", icon = icon("hand-peace")),
-               menuSubItem("Combined Plot", tabName = "combined", icon = icon("handshake")),
-               menuSubItem("Residuals", tabName = "resid", icon = icon("hand-sparkles")))
-      
+               menuSubItem("Separate Plots", tabName = "separate", icon = icon("smog")),
+               menuSubItem("Combined Plot", tabName = "combined", icon = icon("hat-wizard")),
+               menuSubItem("Residuals", tabName = "resid", icon = icon("hand-sparkles"))),
+      menuItem("Simple Models", icon = icon("disease"), tabName = "sm",
+               menuSubItem("Naive Model", tabName = "nm", icon = icon("umbrella-beach")),
+               menuSubItem("Seasonal Naive Model", tabName = "snm", icon = icon("cloud-sun-rain")),
+               menuSubItem("Mean Model", tabName = "mm", icon = icon("sun")),
+               menuSubItem("Drift Model", tabName = "dm", icon = icon("water"))),
+      menuItem("Exponential Smoothing Models", icon = icon("plane"), tabName = "esm",
+               menuSubItem("Holt's Model", tabName = "hm", icon = icon("bus")),
+               menuSubItem("Holt-Winter's Model", tabName = "hwm", icon = icon("caravan"))),
+      menuItem("ARIMA Models", icon = icon("dollar-sign"), tabName = "arima",
+               menuSubItem("Auto ARIMA", tabName = "auto", icon = icon("coins")),
+               menuSubItem("Maunally Selected ARIMA", tabName = "manual", icon = icon("money-bill"))),
+      menuItem("Best Prediction Model!", icon = icon("gift"), tabName = "bpm")
     )
   ),
   
@@ -119,6 +140,42 @@ ui <- dashboardPage(
                   background = "maroon",
                   status = "primary",
                   textOutput("ins3"), 
+                ),
+                
+                box(
+                  title = "Information for Simple Models!",
+                  width = 12,
+                  solidHeader = TRUE,
+                  background = "light-blue",
+                  status = "primary",
+                  textOutput("ins4"), 
+                ),
+                
+                box(
+                  title = "Information for Exponential Smoothing Models!",
+                  width = 12,
+                  solidHeader = TRUE,
+                  background = "green",
+                  status = "primary",
+                  textOutput("ins5"), 
+                ),
+                
+                box(
+                  title = "Information for ARIMA Models!",
+                  width = 12,
+                  solidHeader = TRUE,
+                  background = "purple",
+                  status = "primary",
+                  textOutput("ins6"), 
+                ),
+                
+                box(
+                  title = "Information for Best Model!",
+                  width = 12,
+                  solidHeader = TRUE,
+                  background = "maroon",
+                  status = "primary",
+                  textOutput("ins7"), 
                 )
               )
       ),
@@ -156,7 +213,7 @@ ui <- dashboardPage(
                   width = 12,
                   solidHeader = TRUE,
                   status = "primary",
-                  plotOutput("myplot", height = 250)),
+                  plotOutput("myplot", height = 350)),
                   radioButtons(inputId = "plot_type",
                                label = "Please select which plot you would like to see!",
                                choices = c("Seasonality", "Autocorrelation", "Decomposition" )),
@@ -211,7 +268,7 @@ ui <- dashboardPage(
                   width = 12,
                   solidHeader = TRUE,
                   status = "primary",
-                  plotlyOutput("Co", height = 250)),
+                  plotlyOutput("Co", height = 350)),
                 
                 box(
                   title = "Interpretation of this Combined Plot",
@@ -267,8 +324,181 @@ ui <- dashboardPage(
                   textOutput("restext3"),
                   textOutput("restext2")
                 )
-              )
-      ))))
+              )),
+      
+      tabItem(tabName = "nm",
+              fluidRow(
+                box(
+                  title = "Naive Model Predictions of New Girl Time Series",
+                  width = 12,
+                  solidHeader = TRUE,
+                  status = "primary",
+                  plotOutput("naive", height = 450)),
+                
+                box(
+                  title = "Interpretation of Naive Model",
+                  width = 12,
+                  solidHeader = TRUE,
+                  background = "green",
+                  status = "primary",
+                  textOutput("nmw")
+                )
+              )),
+      
+      tabItem(tabName = "snm",
+              fluidRow(
+                box(
+                  title = "Seasonal Naive Model Predictions of New Girl Time Series",
+                  width = 12,
+                  solidHeader = TRUE,
+                  status = "primary",
+                  plotOutput("seasonal", height = 450)),
+                
+                box(
+                  title = "Interpretation of Seasonal Naive Model",
+                  width = 12,
+                  solidHeader = TRUE,
+                  background = "purple",
+                  status = "primary",
+                  textOutput("snmw")
+                )
+              )),
+      
+      tabItem(tabName = "mm",
+              fluidRow(
+                box(
+                  title = "Mean Model Predictions of New Girl Time Series",
+                  width = 12,
+                  solidHeader = TRUE,
+                  status = "primary",
+                  plotOutput("mean", height = 450)),
+                
+                box(
+                  title = "Interpretation of Mean Model",
+                  width = 12,
+                  solidHeader = TRUE,
+                  background = "maroon",
+                  status = "primary",
+                  textOutput("mmw")
+                )
+              )),
+      
+      tabItem(tabName = "dm",
+              fluidRow(
+                box(
+                  title = "Drift Model Predictions of New Girl Time Series",
+                  width = 12,
+                  solidHeader = TRUE,
+                  status = "primary",
+                  plotOutput("drift", height = 450)),
+                
+                box(
+                  title = "Interpretation of Drift Model",
+                  width = 12,
+                  solidHeader = TRUE,
+                  background = "light-blue",
+                  status = "primary",
+                  textOutput("dmw")
+                )
+              )),
+      
+      tabItem(tabName = "hm",
+              fluidRow(
+                box(
+                  title = "Holt's Model Predictions of New Girl Time Series",
+                  width = 12,
+                  solidHeader = TRUE,
+                  status = "primary",
+                  plotOutput("holt", height = 450)),
+                
+                box(
+                  title = "Interpretation of Holt's Model",
+                  width = 12,
+                  solidHeader = TRUE,
+                  background = "green",
+                  status = "primary",
+                  textOutput("hmw")
+                )
+              )),
+      
+      tabItem(tabName = "hwm",
+              fluidRow(
+                box(
+                  title = "Holt-Winter's Model Predictions of New Girl Time Series",
+                  width = 12,
+                  solidHeader = TRUE,
+                  status = "primary",
+                  plotOutput("holtwin", height = 450)),
+                
+                box(
+                  title = "Interpretation of Holt-Winter's Model",
+                  width = 12,
+                  solidHeader = TRUE,
+                  background = "purple",
+                  status = "primary",
+                  textOutput("hwmw")
+                )
+              )),
+      
+      tabItem(tabName = "auto",
+              fluidRow(
+                tags$img(
+                  src = "realautoarima.jpg",
+                  align = 'center',
+                  style="display: block; margin-left: auto; margin-right: auto;",
+                  width = "750",
+                  height = "450"
+                ),
+                
+                box(
+                  title = "Interpretation of Auto ARIMA Model",
+                  width = 12,
+                  solidHeader = TRUE,
+                  background = "maroon",
+                  status = "primary",
+                  textOutput("aaw")
+                )
+              )),
+      
+      tabItem(tabName = "manual",
+              fluidRow(
+                box(
+                  title = "(0,1,1)(0,1,1) ARIMA Predictions of New Girl Time Series",
+                  width = 12,
+                  solidHeader = TRUE,
+                  status = "primary",
+                  plotOutput("manar", height = 450)),
+                
+                box(
+                  title = "Interpretation of Manually Selected ARIMA Model",
+                  width = 12,
+                  solidHeader = TRUE,
+                  background = "light-blue",
+                  status = "primary",
+                  textOutput("maw")
+                )
+              )),
+      
+      tabItem(tabName = "bpm",
+              fluidRow(
+                box(
+                  title = "The Best Model for Predicting New Girl Interest- THE MEAN MODEL!!!",
+                  width = 12,
+                  solidHeader = TRUE,
+                  status = "primary",
+                  plotOutput("bmp", height = 450)),
+                
+                box(
+                  title = "Why is it the best model?",
+                  width = 12,
+                  solidHeader = TRUE,
+                  background = "green",
+                  status = "primary",
+                  textOutput("bestw")
+                )
+              ))
+      
+      )))
 
 server <- function(input, output, session) {
   
@@ -285,7 +515,7 @@ server <- function(input, output, session) {
   })
   
   output$ins <- renderText({
-    "This is an app looking at the Google Trends of the TV show New Girl! Within this app there are 3 different tabs which are, Full Time Series Plot, Plots, and Comparison to GOT. "
+    " This is an app looking at the Google Trends of the TV show New Girl! Within this app there are 7 different tabs which are, Full Time Series Plot, Plots, Comparison to GOT, Simple Models, Exponential Smoothing Models, ARIMA Models, and Best Prediction Model! In the Full Time Series Plot tab, you will be able to see the full data of New Girl interest from when the show first aired to present day. Additionally, you will see a plot that shows the same data but with the season duration dates shown on the graph. "
   })
   
   output$ins1 <- renderText({
@@ -300,6 +530,22 @@ server <- function(input, output, session) {
     "Finally, in the Comparison to GOT tab, there are three sub-tabs called Separate Plots, Combined Plots, and Residuals. The point of the Comparison to GOT tab is to compare the interest or search frequency of the TV show Game of Thrones compared to New Girl. These are two shows that started in the same year and finished within one year of each other. In the Separate Plots sub-tab, you can see the time series plot of both New Girl and Game of Thrones. Although, in the Combined Plot sub-tab, you can see a plot of both New Girl and Game of Thrones in the same graphic! Finally, in the Residuals sub-tab you can see a comparison of the residuals for New Girl and Game of Thrones."
   })
   
+  output$ins4 <- renderText({
+    " In the Simple Models tab, there are 4 separate sub-tabs called Naïve Model, Seasonal Naïve Model, Mean Model, and Drift Model. In each one of these you will see a 12-month prediction in New Girl interest based on the 4 models listed above. "
+  })
+  
+  output$ins5 <- renderText({
+    " Included in the Exponential Smoothing tab there are 2 sub-tabs called Holt’s and Holt-Winters’. In each of these sub-tabs you will see a 12-month prediction of New Girl interest based on these 2 exponential smoothing models.   "
+  })
+  
+  output$ins6 <- renderText({
+    " In the ARIMA Models tab there are 2 sub-tabs called Auto ARIMA and Manual ARIMA. Within these sub-tabs you will see 12-month predictions of New Girl interest based on ARIMA models with either auto-selected parameters or manually selected parameters.   "
+  })
+  
+  output$ins7 <- renderText({
+    " In the Best Model tab, you will see the best model that we have made in predicting New Girl interest in the future!  "
+  })
+  
   output$restext <- renderText({
     "Residuals of a time series is the difference between the model and the observed data, with the model being the combination of the trend and seasonality component. The residual graph shows us how well the observed data matches the model! With these two times series we made a TSLM model which is fitting a linear model, including trend and seasonality components, to a time series. When looking at the results for New Girl, we can see in the top plot, or Innovation residuals, that towards 2020-2022 the plot gets thinner compared to the beginning of the time which is concerning. Ideally, there would be no pattern in the plot. When looking at the bottom left or ACF plot, we can see that there is large issue with lag. This means that the data is extremely autocorrelated at some points which is also concerning. Additionally, we can see that with the New Girl data there is super high first order autocorrelation which means that observations that are one apart are correlated. When looking at the bar chart on the bottom left, the chart roughly follows a bell-shaped curve. Overall, I would say that the residuals for New Girl are concerning which means that this model does not do a great job in fitting the data. "
   })
@@ -310,6 +556,42 @@ server <- function(input, output, session) {
   
   output$restext3 <- renderText({
     " -  "
+  })
+  
+  output$nmw <- renderText({
+    " Naïve models predict into the future using the most recent point of data. When using the naïve model to predict interest in New Girl for the next 12 months, the typical miss we expect is about 5.06 in level of interest.  "
+  })
+  
+  output$snmw <- renderText({
+    " Seasonal naïve models predict into the future using the last observed value in the same season as the current value we are predicting. When using the seasonal naïve model to predict interest in New Girl for the next 12 months, the typical miss we expect is about 12.95 in level of interest. "
+  })
+  
+  output$mmw <- renderText({
+    " Mean models predict into the future using the average value (or average interest in this case) from the historical data. When using the mean model to predict interest in New Girl for the next 12 months, the typical miss we expect is about 11.76 in level of interest.  "
+  })
+  
+  output$dmw <- renderText({
+    " Drift models predict into the future by connecting the first observed value and last observed value and continuing that line into the future. When using the drift model to predict interest in New Girl for the next 12 months, the typical miss we expect is about 5.06 in level of interest.  "
+  })
+  
+  output$hmw <- renderText({
+    " Holt’s model predicts into the future using exponential smoothing considering trend. When using Holt’s model to predict interest in New Girl for the next 12 months, the typical miss we expect is about 8.19 in level of interest.  "
+  })
+  
+  output$hwmw <- renderText({
+    " Holt-Winters’ model predicts into the future using exponential smoothing considering trend and seasonality. When using Holt-Winters’ model to predict interest in New Girl for the next 12 months, the typical miss we expect is about 14.92 in level of interest.  "
+  })
+  
+  output$aaw <- renderText({
+    " An ARIMA model predicts into the future by observing the difference between values in a time series. When using auto ARIMA to predict interest in New Girl for the next 12 months, the typical miss we expect is about 7.67 in level of interest.  "
+  })
+  
+  output$maw <- renderText({
+    " An ARIMA model predicts into the future by observing the difference between values in a time series. When using this ARIMA to predict interest in New Girl for the next 12 months, the typical miss we expect is about 9.34 in level of interest. "
+  })
+  
+  output$bestw <- renderText({
+    " When comparing all of the RMSEs of the models we have made  (naïve, seasonal naïve, mean, drift, Holt’s, Holt-Winters’, and 2 ARIMA models) using time series cross-validation we find that the mean model is the best model in predicting New Girl interest because of its lowest RMSE. Using time series cross-validation methods, we expect the mean model to typically miss by about 11.6 in predicting New Girl interest.   "
   })
   
   output$myplot <- renderPlot({
@@ -564,6 +846,94 @@ server <- function(input, output, session) {
     fit_consGOT %>% gg_tsresiduals()
     
   })
+  
+  output$naive <- renderPlot({
+    NaiveFit <- train %>% 
+      model(naive =  NAIVE(Interest))
+    
+    NaiveFit %>% 
+      forecast(test) %>% 
+      autoplot(NGTS)
+    
+  })
+  
+  output$seasonal <- renderPlot({
+    SNaiveFit <- train %>% 
+      model(snaive = SNAIVE(Interest)) 
+    
+    SNaiveFit %>% 
+      forecast(test) %>% 
+      autoplot(NGTS)
+    
+  })
+  
+  output$mean <- renderPlot({
+    MeanFit <- train %>% 
+      model(mean = MEAN(Interest)) 
+    
+    MeanFit %>% 
+      forecast(test) %>% 
+      autoplot(NGTS)
+    
+  })
+  
+  output$drift <- renderPlot({
+    DriftFit <- train %>% 
+      model(drift = RW(Interest ~ drift())) 
+    
+    DriftFit %>% 
+      forecast(test) %>% 
+      autoplot(NGTS)
+    
+  })
+  
+  output$holt <- renderPlot({
+    HoltFit <- train %>% 
+      model(holts = ETS(Interest ~ error("A") + trend("A") + season("N"))) 
+    
+    HoltFit %>% 
+      forecast(test) %>% 
+      autoplot(NGTS)
+    
+  })
+  
+  output$holtwin <- renderPlot({
+    HWFit <- train %>% 
+      model(HW = ETS(Interest ~ error("A") + trend("A") + season("A")))
+    
+    HWFit %>% 
+      forecast(test) %>% 
+      autoplot(NGTS)
+    
+  })
+  
+  output$autoar <- renderPlot({
+    AAFit <- train %>% 
+      model(auto = ARIMA(Interest, stepwise = FALSE, approx = FALSE))
+    
+    AAFit %>% 
+      forecast(test) %>% 
+      autoplot(NGTS)
+    
+  })
+  
+  output$manar <- renderPlot({
+    AMFit <- train %>% 
+      model(arima011011 = ARIMA(Interest ~ pdq(0,1,1) + PDQ(0,1,1)))
+    
+    AMFit %>% 
+      forecast(test) %>% 
+      autoplot(NGTS)
+    
+  })
+  
+  output$bmp <- renderPlot({
+    MeanFit %>% 
+      forecast(test) %>% 
+      autoplot(NGTS)
+    
+  })
 }
 
 shinyApp(ui, server)
+
